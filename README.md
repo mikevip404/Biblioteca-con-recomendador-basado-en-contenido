@@ -13,7 +13,7 @@ librerías de ML ni APIs de IA).
 
 ## Fases
 
-1. **Fase 1** — Esqueleto backend, PostgreSQL, migraciones y `/health`. ✅
+1. **Fase 1** — Esqueleto backend, PostgreSQL, migraciones y `/health`
 2. Fase 2 — Autenticación (Argon2id, JWT, refresh rotativo), roles.
 3. Fase 3 — CRUD de libros, géneros, valoraciones y favoritos.
 4. Fase 4 — Motor de recomendación por contenido + grafo de libros afines.
