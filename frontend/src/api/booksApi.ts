@@ -1,4 +1,4 @@
-import type { BookDTO, BookListQuery, BookPage } from '@/types';
+import type { ApiRequestOptions, BookDTO, BookListQuery, BookPage } from '@/types';
 
 import { http } from './http';
 
