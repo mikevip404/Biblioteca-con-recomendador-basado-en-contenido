@@ -1,20 +1,36 @@
-import type { FavoriteDTO, Paginated } from '@/types';
+import type { ApiRequestOptions, FavoriteDTO, FavoriteToggleDTO, Paginated } from '@/types';
 
 import { http } from './http';
 
 export const favoritesApi = {
-  async add(bookId: string): Promise<FavoriteDTO> {
-    const { data } = await http.put<{ data: FavoriteDTO }>(`/books/${bookId}/favorite`);
+  /** `PUT /books/:bookId/favorite`: marca favorito (idempotente). */
+  async add(bookId: string, options: ApiRequestOptions = {}): Promise<FavoriteToggleDTO> {
+    const { data } = await http.put<{ data: FavoriteToggleDTO }>(
+      `/books/${bookId}/favorite`,
+      undefined,
+      options
+    );
     return data.data;
   },
 
-  async remove(bookId: string): Promise<void> {
-    await http.delete(`/books/${bookId}/favorite`);
+  /** `DELETE /books/:bookId/favorite`: quita de favoritos (idempotente). */
+  async remove(bookId: string, options: ApiRequestOptions = {}): Promise<FavoriteToggleDTO> {
+    const { data } = await http.delete<{ data: FavoriteToggleDTO }>(
+      `/books/${bookId}/favorite`,
+      options
+    );
+    return data.data;
   },
 
-  async listMine(page = 1, limit = 20): Promise<Paginated<FavoriteDTO>> {
+  /** `GET /me/favorites`: mis favoritos con datos bÃ¡sicos del libro. */
+  async listMine(
+    page = 1,
+    limit = 20,
+    options: ApiRequestOptions = {}
+  ): Promise<Paginated<FavoriteDTO>> {
     const { data } = await http.get<Paginated<FavoriteDTO>>('/me/favorites', {
-      params: { page, limit }
+      params: { page, limit },
+      ...options
     });
     return data;
   }
