@@ -2,6 +2,7 @@
 import { RouterView } from 'vue-router';
 
 import AppHeader from '@/components/AppHeader.vue';
+import ToastHost from '@/components/ToastHost.vue';
 </script>
 
 <template>
@@ -10,5 +11,6 @@ import AppHeader from '@/components/AppHeader.vue';
     <main id="main-content" class="app-main">
       <RouterView />
     </main>
+    <ToastHost />
   </div>
 </template>
