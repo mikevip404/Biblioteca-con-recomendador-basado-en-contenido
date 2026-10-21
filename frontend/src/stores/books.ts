@@ -79,7 +79,41 @@ export const useBooksStore = defineStore('books', () => {
   function seedBook(book: BookDTO): void {
     byId.value[book.id] = book;
   }
+  
+/** Fusiona un parche sobre un libro cacheado (no crea entidades nuevas). */
+  function patchBook(id: string, patch: Partial<BookDTO>): void {
+    const current = byId.value[id];
+    if (current === undefined) return;
+    byId.value[id] = { ...current, ...patch };
+  }
 
+  /** Marca mi valoración del libro (`null` = sin valorar). */
+  function setMyRating(id: string, value: number | null): void {
+    patchBook(id, { myRating: value });
+  }
+
+  /** Marca si el libro es favorito. */
+  function setFavorite(id: string, value: boolean): void {
+    patchBook(id, { isFavorite: value });
+  }
+
+  /**
+   * Aplica un cambio de valoraciones al promedio y al contador del libro sin
+   * recargar. Reconstruye la suma desde el promedio conocido (redondeado a 2
+   * decimales), suficiente para el estado optimista; la recarga lo corrige.
+   */
+  function applyRatingChange(id: string, countDelta: number, sumDelta: number): void {
+    const current = byId.value[id];
+    if (current === undefined) return;
+    const count = Math.max(0, current.ratingCount + countDelta);
+    const sum = current.averageRating * current.ratingCount + sumDelta;
+    const average = count === 0 ? 0 : Math.round((sum / count) * 100) / 100;
+    patchBook(id, { ratingCount: count, averageRating: average });
+  }
+
+  
+  
+  
   /** Trae una página. Devuelve el resultado y deja caché fresca para el resto. */
   async function fetchBooks(query: BookListQuery): Promise<BookPage> {
     const key = queryKey(query);
