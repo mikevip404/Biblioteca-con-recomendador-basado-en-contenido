@@ -2,7 +2,7 @@ import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 
 import { booksApi } from '@/api/booksApi';
-import type { BookDTO, BookListQuery, BookPage } from '@/types';
+import type { ApiRequestOptions, BookDTO, BookListQuery, BookPage } from '@/types';
 
 /** TTL corto del caché de consultas del catálogo. */
 const CACHE_TTL_MS = 30_000;
