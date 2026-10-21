@@ -61,6 +61,15 @@ export function isApiError(value: unknown): value is ApiError {
   return value instanceof ApiError;
 }
 
+/**
+ * Opciones comunes de una petición del cliente HTTP. De momento solo la
+ * señal de cancelación (`AbortController`), que las vistas usan para descartar
+ * respuestas obsoletas al cambiar de ruta o de página.
+ */
+export interface ApiRequestOptions {
+  signal?: AbortSignal;
+}
+
 /** Respuesta paginada estándar del catálogo. */
 export interface Paginated<T> {
   data: T[];
