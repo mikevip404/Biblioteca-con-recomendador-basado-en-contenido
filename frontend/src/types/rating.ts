@@ -41,6 +41,16 @@ export interface FavoriteDTO {
   book: BookSummaryDTO;
 }
 
+/**
+ * Respuesta de `PUT`/`DELETE /books/:bookId/favorite`. El backend confirma el
+ * estado resultante sin devolver el favorito completo (el `id` solo lo da el
+ * listado `GET /me/favorites`).
+ */
+export interface FavoriteToggleDTO {
+  bookId: string;
+  isFavorite: boolean;
+}
+
 /** Cuerpo de `PUT /books/:bookId/rating`. */
 export interface RatingBodyRequest {
   value: RatingValue;
