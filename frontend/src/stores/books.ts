@@ -157,12 +157,17 @@ export const useBooksStore = defineStore('books', () => {
   }
 
   /** Detalle de un libro (usa/normaliza el byId). */
-  async function fetchBook(id: string): Promise<BookDTO> {
+ async function fetchBook(
+    id: string,
+    options: { signal?: AbortSignal; force?: boolean } = {}
+  ): Promise<BookDTO> {
     const cached = byId.value[id];
-    if (cached !== undefined && hasFreshCache(`book:${id}`)) {
+    if (cached !== undefined && hasFreshCache(`book:${id}`) && options.force !== true) {
       return cached;
     }
-    const book = await booksApi.getById(id);
+     const requestOptions: ApiRequestOptions = {};
+    if (options.signal !== undefined) requestOptions.signal = options.signal;
+    const book = await booksApi.getById(id, requestOptions);
     seedBook(book);
     queries.value[`book:${id}`] = {
       ids: [id],
@@ -195,6 +200,10 @@ export const useBooksStore = defineStore('books', () => {
     fetchBooks,
     fetchBook,
     seedBook,
+    patchBook,
+    setMyRating,
+    setFavorite,
+    applyRatingChange,
     invalidate
   };
 });
