@@ -1,5 +1,5 @@
 <script setup lang="ts">
-withDefaults(defineProps<{ title?: string; description?: string }>(), {
+withDefaults(defineProps<{ title?: string | undefined; description?: string | undefined }>(), {
   title: 'Sin resultados',
   description: ''
 });
