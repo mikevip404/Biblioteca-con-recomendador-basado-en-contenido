@@ -35,6 +35,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, title: 'Mis favoritos' }
   },
   {
+    path: '/me/ratings',
+    name: 'my-ratings',
+    component: () => import('@/views/MyRatingsView.vue'),
+    meta: { requiresAuth: true, title: 'Mis valoraciones' }
+  },
+  {
     path: '/403',
     name: 'forbidden',
     component: () => import('@/views/ForbiddenView.vue'),
