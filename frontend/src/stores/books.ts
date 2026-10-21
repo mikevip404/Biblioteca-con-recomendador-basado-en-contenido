@@ -110,9 +110,6 @@ export const useBooksStore = defineStore('books', () => {
     const average = count === 0 ? 0 : Math.round((sum / count) * 100) / 100;
     patchBook(id, { ratingCount: count, averageRating: average });
   }
-
-  
-  
   
   /** Trae una página. Devuelve el resultado y deja caché fresca para el resto. */
   async function fetchBooks(query: BookListQuery): Promise<BookPage> {
