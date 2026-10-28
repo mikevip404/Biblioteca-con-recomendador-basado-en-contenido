@@ -1,14 +1,30 @@
+import type { Document } from 'mongodb';
 import type { MongoDatabase } from '../db/mongo.js';
 import { MongoAuthorRepository } from '../repositories/author.repository.js';
 import { MongoBookRepository } from '../repositories/book.repository.js';
+import { MongoFavoriteRepository } from '../repositories/favorite.repository.js';
 import { MongoGenreRepository } from '../repositories/genre.repository.js';
+import { MongoRatingRepository } from '../repositories/rating.repository.js';
+import { MongoUserRepository } from '../repositories/user.repository.js';
 import { slugify } from '../utils/slug.js';
+import { Argon2PasswordService } from './password.service.js';
+import { recalculateRatingCounters } from './rating-recalc.js';
 
 export interface SeedResult {
   genresCreated: number;
   authorsCreated: number;
   booksCreated: number;
-  totals: { genres: number; authors: number; books: number };
+  readersCreated: number;
+  ratingsCreated: number;
+  favoritesCreated: number;
+  totals: {
+    genres: number;
+    authors: number;
+    books: number;
+    readers: number;
+    ratings: number;
+    favorites: number;
+  };
 }
 
 const GENRE_SEEDS: ReadonlyArray<{ name: string; description: string }> = [
@@ -39,6 +55,17 @@ const TAG_POOL = [
 ];
 const LANGUAGES = ['es', 'en', 'fr', 'pt'];
 
+/** Lectores sintéticos con preferencias, para probar el recomendador (Fase 5). */
+const LECTOR_COUNT = 20;
+const LECTOR_PASSWORD = 'Lector1234';
+const RATING_COMMENTS = [
+  'Una lectura absorbente.',
+  'Personajes muy bien construidos.',
+  'El ritmo decae a mitad de camino.',
+  'Me ha encantado el final.',
+  'Correcta sin más.'
+];
+
 interface SyntheticBook {
   title: string;
   description: string;
@@ -48,6 +75,11 @@ interface SyntheticBook {
   language: string;
   isbn: string;
   coverUrl: string;
+}
+
+interface SeedBook {
+  id: string;
+  genreIds: string[];
 }
 
 function buildBooks(): SyntheticBook[] {
@@ -71,6 +103,14 @@ function buildBooks(): SyntheticBook[] {
       coverUrl: `https://example.com/covers/${1_000_000_000 + index}.jpg`
     };
   });
+}
+
+function toSeedBook(doc: Document): SeedBook {
+  const genres = doc['genres'];
+  return {
+    id: String(doc['_id']),
+    genreIds: Array.isArray(genres) ? genres.map((value) => String(value)) : []
+  };
 }
 
 /**
@@ -150,6 +190,46 @@ export async function seedCatalog(
     booksCreated++;
   }
 
+   if (allGenres.length === 0 || seedBooks.length === 0) continue;
+
+    // Preferencia por 2 géneros consecutivos (determinista).
+    const first = allGenres[(index * 2) % allGenres.length];
+    const second = allGenres[(index * 2 + 1) % allGenres.length];
+    const preferred = new Set(
+      [first?.id, second?.id].filter((id): id is string => id !== undefined)
+    );
+    const preferredBooks = seedBooks.filter((book) =>
+      book.genreIds.some((id) => preferred.has(id))
+    );
+    const otherBooks = seedBooks.filter(
+      (book) => !book.genreIds.some((id) => preferred.has(id))
+    );
+    const ordered = [...preferredBooks, ...otherBooks];
+    const target = 10 + ((index * 7) % 31); // 10..40 valoraciones
+
+    for (let k = 0; k < ordered.length && k < target; k++) {
+      const book = ordered[k];
+      if (book === undefined) continue;
+      const isPreferred = book.genreIds.some((id) => preferred.has(id));
+      // Valores altos en géneros preferidos; medios en el resto.
+      const value = isPreferred ? 4 + ((index + k) % 2) : 2 + ((index + k) % 2);
+
+      if ((await ratings.findByUserAndBook(reader.id, book.id)) === null) {
+        const comment =
+          k % 5 === 0 ? RATING_COMMENTS[k % RATING_COMMENTS.length] : undefined;
+        await ratings.insert(reader.id, book.id, value, comment);
+        ratingsCreated++;
+      }
+      if (k % 3 === 0 && !(await favorites.exists(reader.id, book.id))) {
+        await favorites.add(reader.id, book.id);
+        favoritesCreated++;
+      }
+    }
+  }
+
+  // Los contadores quedan correctos aunque la semilla se re-ejecute.
+  await recalculateRatingCounters(db);
+
   const result = await books.findMany({
     filter: {},
     sort: 'createdAt',
@@ -162,10 +242,16 @@ export async function seedCatalog(
     genresCreated,
     authorsCreated,
     booksCreated,
+    readersCreated,
+    ratingsCreated,
+    favoritesCreated,
     totals: {
       genres: allGenres.length,
       authors: allAuthors.length,
-      books: result.total
+      books: result.total,
+      readers: await db.countDocuments('users', { role: 'lector' }),
+      ratings: await db.countDocuments('ratings'),
+      favorites: await db.countDocuments('favorites')
     }
   };
 }
