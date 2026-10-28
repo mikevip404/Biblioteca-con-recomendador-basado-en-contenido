@@ -8,21 +8,27 @@ import { runMigrations } from './db/migrate.js';
 import { AuthController } from './controllers/auth.controller.js';
 import { AuthorController } from './controllers/author.controller.js';
 import { BookController } from './controllers/book.controller.js';
+import { FavoriteController } from './controllers/favorite.controller.js';
 import { GenreController } from './controllers/genre.controller.js';
 import { HealthController } from './controllers/health.controller.js';
+import { RatingController } from './controllers/rating.controller.js';
 import { createRateLimiter } from './middlewares/rateLimit.middleware.js';
 import { MongoAuthorRepository } from './repositories/author.repository.js';
 import { MongoBookRelationsRepository } from './repositories/book-relations.repository.js';
 import { MongoBookRepository } from './repositories/book.repository.js';
+import { MongoFavoriteRepository } from './repositories/favorite.repository.js';
 import { MongoGenreRepository } from './repositories/genre.repository.js';
+import { MongoRatingRepository } from './repositories/rating.repository.js';
 import { MongoRefreshTokenRepository } from './repositories/refresh-token.repository.js';
 import { MongoUserRepository } from './repositories/user.repository.js';
 import { MongoHealthRepository } from './repositories/health.repository.js';
 import { AuthService } from './services/auth.service.js';
 import { AuthorService } from './services/author.service.js';
 import { BookService } from './services/book.service.js';
+import { FavoriteService } from './services/favorite.service.js';
 import { GenreService } from './services/genre.service.js';
 import { HealthService } from './services/health.service.js';
+import { RatingService } from './services/rating.service.js';
 import { Argon2PasswordService } from './services/password.service.js';
 import { JwtTokenService } from './services/token.service.js';
 import { createLogger } from './utils/logger.js';
@@ -96,6 +102,55 @@ async function bootstrap(): Promise<void> {
       registerLimiter: createRateLimiter({ windowMs: rateWindowMs, max: env.AUTH_RATE_LIMIT_MAX }),
       loginLimiter: createRateLimiter({ windowMs: rateWindowMs, max: env.AUTH_RATE_LIMIT_MAX }),
       refreshLimiter: createRateLimiter({ windowMs: rateWindowMs, max: env.AUTH_RATE_LIMIT_MAX })
+    },
+    { logger, corsOrigins: env.CORS_ORIGINS }
+  );
+
+  
+  // Valoraciones y favoritos (Fase 4).
+  const ratingRepository = new MongoRatingRepository(db);
+  const favoriteRepository = new MongoFavoriteRepository(db);
+  const ratingService = new RatingService(
+    db,
+    ratingRepository,
+    bookRepository,
+    userRepository
+  );
+  const favoriteService = new FavoriteService(favoriteRepository, bookRepository);
+
+  const rateWindowMs = env.AUTH_RATE_LIMIT_WINDOW_MIN * MS_PER_MINUTE;
+  const writeLimiter = createRateLimiter({
+    windowMs: MS_PER_MINUTE,
+    max: env.WRITE_RATE_LIMIT_MAX
+  });
+  const app = createApp(
+    {
+      healthController: new HealthController(new HealthService(new MongoHealthRepository(db))),
+      authController,
+      authorController: new AuthorController(
+        new AuthorService(authorRepository, bookRepository)
+      ),
+      genreController: new GenreController(
+        new GenreService(genreRepository, bookRepository)
+      ),
+      bookController: new BookController(
+        new BookService(
+          bookRepository,
+          authorRepository,
+          genreRepository,
+          bookRelationsRepository,
+          ratingRepository,
+          favoriteRepository
+        )
+      ),
+      ratingController: new RatingController(ratingService),
+      favoriteController: new FavoriteController(favoriteService),
+      resolveRatingOwnerId: (ratingId: string) => ratingService.findOwnerId(ratingId),
+      tokenService,
+      registerLimiter: createRateLimiter({ windowMs: rateWindowMs, max: env.AUTH_RATE_LIMIT_MAX }),
+      loginLimiter: createRateLimiter({ windowMs: rateWindowMs, max: env.AUTH_RATE_LIMIT_MAX }),
+      refreshLimiter: createRateLimiter({ windowMs: rateWindowMs, max: env.AUTH_RATE_LIMIT_MAX }),
+      writeLimiter
     },
     { logger, corsOrigins: env.CORS_ORIGINS }
   );
