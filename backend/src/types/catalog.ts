@@ -34,6 +34,10 @@ export interface Book {
   createdBy: string;
   /** Se marca en `true` al cambiar género, tags, autor, año o páginas (Fase 5). */
   vectorStale: boolean;
+  /** Nº de valoraciones (denormalizado, mantenido con `$inc`). */
+  ratingCount: number;
+  /** Suma de las valoraciones (denormalizado, mantenido con `$inc`). */
+  ratingSum: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -70,7 +74,7 @@ export interface BookGenreDTO {
 }
 
 export interface BookDTO {
-  id: string;
+   id: string;
   title: string;
   description?: string;
   author: BookAuthorDTO;
@@ -83,6 +87,12 @@ export interface BookDTO {
   coverUrl?: string;
   /** Solo el id del creador; nunca el usuario completo. */
   createdBy: string;
+  /** Media de valoraciones (virtual) y nº de valoraciones. */
+  averageRating: number;
+  ratingCount: number;
+  /** Solo en el detalle: mi valoración (o `null`) y si es favorito. */
+  myRating?: number | null;
+  isFavorite?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -106,4 +116,6 @@ export interface BookFilter {
   yearFrom?: number;
   yearTo?: number;
   language?: string;
+    /** Solo libros con `averageRating >= minRating`. */
+  minRating?: number;
 }
