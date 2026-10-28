@@ -24,5 +24,6 @@ export const migrations: Migration[] = [
   migration007CreateRefreshTokens,
   migration008AuthFields,
   migration009CatalogSchema,
-  migration010CatalogIndexes
+  migration010CatalogIndexes,
+  migration011RatingsFavorites
 ];
