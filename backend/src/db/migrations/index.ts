@@ -9,6 +9,7 @@ import { migration007CreateRefreshTokens } from './007_create_refresh_tokens.js'
 import { migration008AuthFields } from './008_auth_fields.js';
 import { migration009CatalogSchema } from './009_catalog_schema.js';
 import { migration010CatalogIndexes } from './010_catalog_indexes.js';
+import { migration011RatingsFavorites } from './011_ratings_favorites.js';
 
 /**
  * Registro de migraciones en orden de versión.
