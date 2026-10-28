@@ -7,8 +7,10 @@ import helmet from 'helmet';
 import type { AuthController } from './controllers/auth.controller.js';
 import type { AuthorController } from './controllers/author.controller.js';
 import type { BookController } from './controllers/book.controller.js';
+import type { FavoriteController } from './controllers/favorite.controller.js';
 import type { GenreController } from './controllers/genre.controller.js';
 import type { HealthController } from './controllers/health.controller.js';
+import type { RatingController } from './controllers/rating.controller.js';
 import { correlationIdMiddleware } from './middlewares/correlationId.middleware.js';
 import {
   errorMiddleware,
@@ -18,8 +20,10 @@ import { requestLoggerMiddleware } from './middlewares/requestLogger.middleware.
 import { createAuthRouter } from './routes/auth.routes.js';
 import { createAuthorRouter } from './routes/author.routes.js';
 import { createBookRouter } from './routes/book.routes.js';
+import { createFavoriteRouter } from './routes/favorite.routes.js';
 import { createGenreRouter } from './routes/genre.routes.js';
 import { createHealthRouter } from './routes/health.routes.js';
+import { createRatingRouter } from './routes/rating.routes.js';
 import type { TokenService } from './services/token.service.js';
 import type { Logger } from './utils/logger.js';
 
@@ -33,10 +37,15 @@ export interface AppDependencies {
   authorController: AuthorController;
   genreController: GenreController;
   bookController: BookController;
+  ratingController: RatingController;
+  favoriteController: FavoriteController;
+  /** Resolutor de dueño de una valoración (borrado con `requireOwnership`). */
+  resolveRatingOwnerId: (ratingId: string) => Promise<string | undefined>;
   tokenService: TokenService;
   registerLimiter: RequestHandler;
   loginLimiter: RequestHandler;
   refreshLimiter: RequestHandler;
+  writeLimiter: RequestHandler;
 }
 
 export interface AppOptions {
@@ -92,6 +101,21 @@ export function createApp(
     createBookRouter({
       controller: deps.bookController,
       tokenService: deps.tokenService
+    })
+  );
+  app.use(
+    createRatingRouter({
+      controller: deps.ratingController,
+      tokenService: deps.tokenService,
+      writeLimiter: deps.writeLimiter,
+      resolveOwnerId: deps.resolveRatingOwnerId
+    })
+  );
+  app.use(
+    createFavoriteRouter({
+      controller: deps.favoriteController,
+      tokenService: deps.tokenService,
+      writeLimiter: deps.writeLimiter
     })
   );
 
