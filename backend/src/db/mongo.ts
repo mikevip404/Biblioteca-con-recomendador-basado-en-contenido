@@ -23,6 +23,18 @@ export interface IndexOptions {
   weights?: Record<string, number>;
 }
 
+/** Actualización de Mongo: operadores usados por el código. */
+export interface UpdateSpec {
+  $set?: Document;
+  $inc?: Document;
+  $unset?: Document;
+}
+
+export interface UpdateOptions {
+  /** Inserta el documento si el filtro no coincide (`PUT` idempotente). */
+  upsert?: boolean;
+}
+
 /**
  * Abstracción del acceso a la base de datos (MongoDB).
  *
@@ -60,8 +72,29 @@ export interface MongoDatabase {
   deleteOne(collection: string, filter: Document): Promise<number>;
   /** Borra todos los coincidentes. Devuelve cuántos se borraron. */
   deleteMany(collection: string, filter: Document): Promise<number>;
+  /**
+   * Ejecuta `work` dentro de una transacción. Si las transacciones están
+   * desactivadas (Mongo local sin replica set) ejecuta `work` directamente.
+   */
+  withTransaction<T>(work: () => Promise<T>): Promise<T>;
   close(): Promise<void>;
 }
+
+export interface ConnectOptions {
+  /** Exige replica set. En producción siempre `true`. */
+  transactions?: boolean;
+}
+
+/**
+ * Puerto de unidad de trabajo que consumen los servicios. Permite abrir una
+ * transacción sin depender del driver ni de `MongoDatabase` completo.
+ */
+export interface UnitOfWork {
+  withTransaction<T>(work: () => Promise<T>): Promise<T>;
+}
+
+/** Sesión ambiente: las operaciones de la fachada la adjuntan si existe. */
+const sessionStorage = new AsyncLocalStorage<ClientSession>();
 
 /**
  * Conecta a MongoDB (Atlas con `mongodb+srv://` o local con `mongodb://`).
