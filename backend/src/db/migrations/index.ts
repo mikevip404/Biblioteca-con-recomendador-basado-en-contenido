@@ -10,6 +10,7 @@ import { migration008AuthFields } from './008_auth_fields.js';
 import { migration009CatalogSchema } from './009_catalog_schema.js';
 import { migration010CatalogIndexes } from './010_catalog_indexes.js';
 import { migration011RatingsFavorites } from './011_ratings_favorites.js';
+import { migration012RecommenderVectors } from './012_recommender_vectors.js';
 
 /**
  * Registro de migraciones en orden de versión.
@@ -26,5 +27,6 @@ export const migrations: Migration[] = [
   migration008AuthFields,
   migration009CatalogSchema,
   migration010CatalogIndexes,
-  migration011RatingsFavorites
+  migration011RatingsFavorites,
+  migration012RecommenderVectors
 ];
