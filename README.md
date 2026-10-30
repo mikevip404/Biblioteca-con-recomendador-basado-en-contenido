@@ -9,6 +9,5 @@ librerías de ML ni APIs de IA).
 
 - `backend/` — Node.js + Express + TypeScript estricto + MongoDB (capas
   controllers → services → repositories con inyección de dependencias).
-- `frontend/` — Vue 3 + Pinia + TypeScript + Vue Router (Fase 2 en adelante).
-
+- `frontend/` — Vue 3 + Pinia + TypeScript + Vue Router 
 
