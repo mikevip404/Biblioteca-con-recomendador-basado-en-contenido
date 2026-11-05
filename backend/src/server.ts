@@ -12,10 +12,12 @@ import { FavoriteController } from './controllers/favorite.controller.js';
 import { GenreController } from './controllers/genre.controller.js';
 import { HealthController } from './controllers/health.controller.js';
 import { RatingController } from './controllers/rating.controller.js';
+import { RecommenderController } from './controllers/recommender.controller.js';
 import { createRateLimiter } from './middlewares/rateLimit.middleware.js';
 import { MongoAuthorRepository } from './repositories/author.repository.js';
 import { MongoBookRelationsRepository } from './repositories/book-relations.repository.js';
 import { MongoBookRepository } from './repositories/book.repository.js';
+import { MongoBookVectorRepository } from './repositories/book-vector.repository.js';
 import { MongoFavoriteRepository } from './repositories/favorite.repository.js';
 import { MongoGenreRepository } from './repositories/genre.repository.js';
 import { MongoRatingRepository } from './repositories/rating.repository.js';
@@ -29,6 +31,7 @@ import { FavoriteService } from './services/favorite.service.js';
 import { GenreService } from './services/genre.service.js';
 import { HealthService } from './services/health.service.js';
 import { RatingService } from './services/rating.service.js';
+import { RecommenderService } from './services/recommender.service.js';
 import { Argon2PasswordService } from './services/password.service.js';
 import { JwtTokenService } from './services/token.service.js';
 import { createLogger } from './utils/logger.js';
@@ -39,6 +42,13 @@ const MS_PER_DAY = 86_400_000;
 async function bootstrap(): Promise<void> {
   const env = loadEnv();
   const logger = createLogger('biblioteca-api', env.LOG_LEVEL);
+
+    // En producción las transacciones son obligatorias (integridad de contadores).
+  if (env.NODE_ENV === 'production' && !env.MONGODB_TRANSACTIONS) {
+    throw new Error(
+      'MONGODB_TRANSACTIONS debe ser true en producción (requiere replica set)'
+    );
+  }
 
   const db = await connectMongo(env.MONGODB_URI, env.MONGODB_DB_NAME);
 
@@ -79,35 +89,7 @@ async function bootstrap(): Promise<void> {
   const bookRepository = new MongoBookRepository(db);
   const bookRelationsRepository = new MongoBookRelationsRepository(db);
 
-  const rateWindowMs = env.AUTH_RATE_LIMIT_WINDOW_MIN * MS_PER_MINUTE;
-  const app = createApp(
-    {
-      healthController: new HealthController(new HealthService(new MongoHealthRepository(db))),
-      authController,
-      authorController: new AuthorController(
-        new AuthorService(authorRepository, bookRepository)
-      ),
-      genreController: new GenreController(
-        new GenreService(genreRepository, bookRepository)
-      ),
-      bookController: new BookController(
-        new BookService(
-          bookRepository,
-          authorRepository,
-          genreRepository,
-          bookRelationsRepository
-        )
-      ),
-      tokenService,
-      registerLimiter: createRateLimiter({ windowMs: rateWindowMs, max: env.AUTH_RATE_LIMIT_MAX }),
-      loginLimiter: createRateLimiter({ windowMs: rateWindowMs, max: env.AUTH_RATE_LIMIT_MAX }),
-      refreshLimiter: createRateLimiter({ windowMs: rateWindowMs, max: env.AUTH_RATE_LIMIT_MAX })
-    },
-    { logger, corsOrigins: env.CORS_ORIGINS }
-  );
-
-  
-  // Valoraciones y favoritos (Fase 4).
+   // Valoraciones y favoritos (Fase 4).
   const ratingRepository = new MongoRatingRepository(db);
   const favoriteRepository = new MongoFavoriteRepository(db);
   const ratingService = new RatingService(
@@ -118,12 +100,23 @@ async function bootstrap(): Promise<void> {
   );
   const favoriteService = new FavoriteService(favoriteRepository, bookRepository);
 
+  // Recomendador por contenido (Fase 5).
+  const bookVectorRepository = new MongoBookVectorRepository(db);
+  const recommenderService = new RecommenderService(
+    bookRepository,
+    ratingRepository,
+    favoriteRepository,
+    bookVectorRepository,
+    genreRepository,
+    authorRepository
+  );
+
   const rateWindowMs = env.AUTH_RATE_LIMIT_WINDOW_MIN * MS_PER_MINUTE;
-  const writeLimiter = createRateLimiter({
+   const writeLimiter = createRateLimiter({
     windowMs: MS_PER_MINUTE,
     max: env.WRITE_RATE_LIMIT_MAX
   });
-  const app = createApp(
+const app = createApp(
     {
       healthController: new HealthController(new HealthService(new MongoHealthRepository(db))),
       authController,
@@ -145,6 +138,7 @@ async function bootstrap(): Promise<void> {
       ),
       ratingController: new RatingController(ratingService),
       favoriteController: new FavoriteController(favoriteService),
+      recommenderController: new RecommenderController(recommenderService),
       resolveRatingOwnerId: (ratingId: string) => ratingService.findOwnerId(ratingId),
       tokenService,
       registerLimiter: createRateLimiter({ windowMs: rateWindowMs, max: env.AUTH_RATE_LIMIT_MAX }),
