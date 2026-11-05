@@ -290,4 +290,16 @@ export class MongoBookRepository implements BookRepository {
       { $inc: { ratingCount: countDelta, ratingSum: sumDelta } }
     );
   }
+
+   async markVectorsFresh(ids: string[]): Promise<void> {
+    const objectIds = ids
+      .map(toObjectId)
+      .filter((value): value is ObjectId => value !== null);
+    if (objectIds.length === 0) return;
+    await this.db.updateMany(
+      'books',
+      { _id: { $in: objectIds } },
+      { $set: { vectorStale: false } }
+    );
+  }
 }
