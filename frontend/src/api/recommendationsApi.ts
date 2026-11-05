@@ -11,23 +11,37 @@ export interface RecommendationQuery {
 }
 
 export const recommendationsApi = {
-  async getRecommendations(query: RecommendationQuery): Promise<RecommendationSetDTO> {
+  async getRecommendations(
+    query: RecommendationQuery,
+    options: ApiRequestOptions = {}
+  ): Promise<RecommendationSetDTO> {
     const { data } = await http.get<RecommendationSetDTO>('/me/recommendations', {
-      params: query
+      params: query,
+      ...options
     });
     return data;
   },
 
-  async getSimilar(bookId: string, query: SimilarQuery): Promise<SimilarBookDTO[]> {
-    const { data } = await http.get<{ data: SimilarBookDTO[] }>(`/books/${bookId}/similar`, {
-      params: query
-    });
+  async getSimilar(
+    bookId: string,
+    query: SimilarQuery,
+    options: ApiRequestOptions = {}
+  ): Promise<SimilarBookDTO[]> {
+    const { data } = await http.get<{ data: SimilarBookDTO[] }>(
+      `/books/${bookId}/similar`,
+      { params: query, ...options }
+    );
     return data.data;
   },
-
-  async getGraph(bookId: string, query: SimilarQuery): Promise<GraphDTO> {
+  
+  async getGraph(
+    bookId: string,
+    query: SimilarQuery,
+    options: ApiRequestOptions = {}
+  ): Promise<GraphDTO> {
     const { data } = await http.get<{ data: GraphDTO }>(`/books/${bookId}/graph`, {
-      params: query
+      params: query,
+      ...options
     });
     return data.data;
   },
