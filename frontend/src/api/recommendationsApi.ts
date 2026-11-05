@@ -1,4 +1,4 @@
-import type { GraphDTO, RebuildStatus, RecommendationSetDTO, SimilarBookDTO } from '@/types';
+import type { ApiRequestOptions, GraphDTO, RebuildStatus, RecommendationSetDTO, SimilarBookDTO } from '@/types';
 
 import { http } from './http';
 
