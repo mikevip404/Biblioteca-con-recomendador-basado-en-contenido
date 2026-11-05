@@ -11,6 +11,7 @@ import type { FavoriteController } from './controllers/favorite.controller.js';
 import type { GenreController } from './controllers/genre.controller.js';
 import type { HealthController } from './controllers/health.controller.js';
 import type { RatingController } from './controllers/rating.controller.js';
+import type { RecommenderController } from './controllers/recommender.controller.js';
 import { correlationIdMiddleware } from './middlewares/correlationId.middleware.js';
 import {
   errorMiddleware,
@@ -24,6 +25,7 @@ import { createFavoriteRouter } from './routes/favorite.routes.js';
 import { createGenreRouter } from './routes/genre.routes.js';
 import { createHealthRouter } from './routes/health.routes.js';
 import { createRatingRouter } from './routes/rating.routes.js';
+import { createRecommenderRouter } from './routes/recommender.routes.js';
 import type { TokenService } from './services/token.service.js';
 import type { Logger } from './utils/logger.js';
 
@@ -39,6 +41,7 @@ export interface AppDependencies {
   bookController: BookController;
   ratingController: RatingController;
   favoriteController: FavoriteController;
+  recommenderController: RecommenderController;
   /** Resolutor de dueño de una valoración (borrado con `requireOwnership`). */
   resolveRatingOwnerId: (ratingId: string) => Promise<string | undefined>;
   tokenService: TokenService;
@@ -116,6 +119,12 @@ export function createApp(
       controller: deps.favoriteController,
       tokenService: deps.tokenService,
       writeLimiter: deps.writeLimiter
+    })
+  );
+   app.use(
+    createRecommenderRouter({
+      controller: deps.recommenderController,
+      tokenService: deps.tokenService
     })
   );
 
