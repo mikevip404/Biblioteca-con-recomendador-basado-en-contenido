@@ -65,6 +65,8 @@ export interface BookRepository {
   findById(id: string): Promise<Book | null>;
   /** Libros por id (para poblar los listados "míos"). */
   findByIds(ids: string[]): Promise<Book[]>;
+  /** Todos los libros (lo usa el recomendador para construir el corpus). */
+  findAll(): Promise<Book[]>;
   findByIsbn(isbn: string): Promise<Book | null>;
   findMany(spec: BookListSpec): Promise<BookListResult>;
   create(data: CreateBookData): Promise<Book>;
@@ -74,6 +76,8 @@ export interface BookRepository {
   countByGenre(genreId: string): Promise<number>;
   /** Ajusta `ratingCount`/`ratingSum` de forma atómica (`$inc`). */
   applyRatingDelta(bookId: string, countDelta: number, sumDelta: number): Promise<void>;
+  /** Marca los vectores de los libros como reconstruidos (`vectorStale=false`). */
+  markVectorsFresh(ids: string[]): Promise<void>;
 }
 
 function toObjectId(id: string): ObjectId | null {
@@ -148,6 +152,11 @@ export class MongoBookRepository implements BookRepository {
       .filter((value): value is ObjectId => value !== null);
     if (objectIds.length === 0) return [];
     const docs = await this.db.find('books', { _id: { $in: objectIds } });
+    return toBooks(docs);
+  }
+
+  async findAll(): Promise<Book[]> {
+    const docs = await this.db.find('books', {}, { sort: { createdAt: 1, _id: 1 } });
     return toBooks(docs);
   }
 
