@@ -29,6 +29,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, title: 'Detalle del libro' }
   },
   {
+    path: '/recommendations',
+    name: 'recommendations',
+    component: () => import('@/views/RecommendationsView.vue'),
+    meta: { requiresAuth: true, title: 'Recomendados' }
+  },
+  {
     path: '/favorites',
     name: 'favorites',
     component: () => import('@/views/FavoritesView.vue'),
