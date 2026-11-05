@@ -28,5 +28,7 @@ export class MongoBookRelationsRepository implements BookRelationsRepository {
     // relaciones y luego el libro; el servicio maneja cualquier fallo.
     await this.db.deleteMany('ratings', { bookId: objectId });
     await this.db.deleteMany('favorites', { bookId: objectId });
+    // El vector usa el id del libro como `_id`.
+    await this.db.deleteMany('book_vectors', { _id: objectId });
   }
 }
