@@ -189,6 +189,17 @@ export class MongoRatingRepository implements RatingRepository {
     return { items: toRatings(docs), total, pagination };
   }
 
+   async listAllByUser(userId: string): Promise<Rating[]> {
+    const userObjectId = toObjectId(userId);
+    if (userObjectId === null) return [];
+    const docs = await this.db.find(
+      'ratings',
+      { userId: userObjectId },
+      { sort: { createdAt: -1, _id: 1 } }
+    );
+    return toRatings(docs);
+  }
+  
   async countByBook(bookId: string): Promise<number> {
     const bookObjectId = toObjectId(bookId);
     if (bookObjectId === null) return 0;
