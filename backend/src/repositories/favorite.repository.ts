@@ -105,4 +105,20 @@ export class MongoFavoriteRepository implements FavoriteRepository {
     }
     return { items, total, pagination };
   }
+
+   async listAllByUser(userId: string): Promise<Favorite[]> {
+    const userObjectId = toObjectId(userId);
+    if (userObjectId === null) return [];
+    const docs = await this.db.find(
+      'favorites',
+      { userId: userObjectId },
+      { sort: { createdAt: -1, _id: 1 } }
+    );
+    const favorites: Favorite[] = [];
+    for (const doc of docs) {
+      const favorite = toFavorite(doc);
+      if (favorite !== null) favorites.push(favorite);
+    }
+    return favorites;
+  }
 }
