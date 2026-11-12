@@ -31,7 +31,9 @@ const themeLabel = computed(() => (ui.theme === 'dark' ? 'Modo claro' : 'Modo os
 
     <nav class="app-header__nav" aria-label="Navegación principal">
       <RouterLink to="/books" class="app-header__link">Catálogo</RouterLink>
+      <RouterLink to="/recommendations" class="app-header__link">Recomendados</RouterLink>
       <RouterLink to="/favorites" class="app-header__link">Favoritos</RouterLink>
+       <RouterLink to="/me/ratings" class="app-header__link">Mis valoraciones</RouterLink>
       <RouterLink v-if="auth.isAdmin" to="/403" class="app-header__link">
         Admin (demo)
       </RouterLink>
