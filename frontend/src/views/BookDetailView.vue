@@ -35,9 +35,13 @@ const book = computed<BookDTO | undefined>(() => books.getBook(bookId.value));
 const bookLoading = ref(false);
 const bookError = ref<string | null>(null);
 const ratingsPage = ref(1);
+const similar = ref<SimilarBookDTO[]>([]);
+const similarLoading = ref(false);
+const similarError = ref<string | null>(null);
 
 let routeController: AbortController | null = null;
 let ratingsController: AbortController | null = null;
+let similarController: AbortController | null = null;
 
 async function loadBook(signal: AbortSignal): Promise<void> {
   const id = bookId.value;
@@ -62,13 +66,35 @@ async function loadRatings(page: number, signal: AbortSignal): Promise<void> {
   await ratings.fetchBookRatings(id, { page, limit: RATINGS_LIMIT, signal });
 }
 
+async function loadSimilar(signal: AbortSignal): Promise<void> {
+  const id = bookId.value;
+  if (id === '') return;
+  similarLoading.value = true;
+  similarError.value = null;
+  try {
+    similar.value = await recommendationsApi.getSimilar(
+      id,
+      { limit: 6 },
+      { signal }
+    );
+  } catch (error) {
+    if (signal.aborted) return;
+    similarError.value = apiErrorMessage(error);
+  } finally {
+    if (!signal.aborted) similarLoading.value = false;
+  }
+}
+  
 function load(page = 1): void {
   routeController?.abort();
   ratingsController?.abort();
+  similarController?.abort();
   routeController = new AbortController();
   ratingsController = new AbortController();
+  similarController = new AbortController();
   void loadBook(routeController.signal);
   void loadRatings(page, ratingsController.signal);
+  void loadSimilar(similarController.signal);
 }
 
 function changeRatingsPage(page: number): void {
@@ -85,6 +111,12 @@ function retryRatings(): void {
   changeRatingsPage(ratingsPage.value);
 }
 
+function retrySimilar(): void {
+  similarController?.abort();
+  similarController = new AbortController();
+  void loadSimilar(similarController.signal);
+}
+
 onMounted(() => {
   load();
 });
@@ -96,6 +128,7 @@ watch(bookId, () => {
 onBeforeUnmount(() => {
   routeController?.abort();
   ratingsController?.abort();
+  similarController?.abort();
 });
 
 // Siembra mi valoración y el estado de favorito desde el detalle del libro.
@@ -322,6 +355,31 @@ async function onDeleteRating(): Promise<void> {
           @retry="retryRatings"
           @change="changeRatingsPage"
         />
+      </section>
+
+      <section
+        v-if="similarLoading || similarError !== null || similar.length > 0"
+        class="book-detail__similar"
+        aria-labelledby="similar-heading"
+      >
+        <h2 id="similar-heading" class="book-detail__section-title">Libros similares</h2>
+
+        <div v-if="similarLoading && similar.length === 0" role="status">
+          <SkeletonCard :count="3" />
+          <span class="sr-only">Buscando libros similares…</span>
+        </div>
+
+        <ErrorState
+          v-else-if="similarError !== null"
+          :message="similarError"
+          @retry="retrySimilar"
+        />
+
+        <ul v-else class="book-detail__similar-grid">
+          <li v-for="item in similar" :key="item.book.id">
+            <RecommendationCard :item="item" />
+          </li>
+        </ul>
       </section>
     </template>
   </section>
