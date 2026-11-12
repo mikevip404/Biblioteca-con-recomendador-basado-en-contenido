@@ -7,6 +7,7 @@ import EmptyState from '@/components/EmptyState.vue';
 import ErrorState from '@/components/ErrorState.vue';
 import RatingList from '@/components/RatingList.vue';
 import StarRating from '@/components/StarRating.vue';
+import { recommendationsApi } from '@/api/recommendationsApi';
 import { useAuthStore } from '@/stores/auth';
 import { useBooksStore } from '@/stores/books';
 import { useFavoritesStore } from '@/stores/favorites';
